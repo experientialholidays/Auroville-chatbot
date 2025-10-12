@@ -1,7 +1,21 @@
 from datetime import datetime
 from agents import Agent, function_tool,OpenAIChatCompletionsModel
 from openai import AsyncOpenAI
+from vector_db import VectorDBManager
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Vector Database
+VECTOR_DB_NAME = "vector_db"
+DB_FOLDER = "input"
+db_manager = VectorDBManager(folder=DB_FOLDER, db_name=VECTOR_DB_NAME)
+vectorstore = db_manager.create_or_load_db(force_refresh=False)
+retriever = db_manager.get_retriever(k=50)
+
+
 # Configuration
 MODEL = "gpt-5"
 google_api_key = os.getenv('GOOGLE_API_KEY')
@@ -34,4 +48,43 @@ Your task:
 
 Your goal is to ensure that users can easily discover what's happening in Auroville without being overwhelmed with unnecessary information.
 """
-vectordb_filtering_agent = Agent(name="vectordb_query_selector_agent", instructions=INSTRUCTIONS, model=gemini_model)
+
+@function_tool
+def search_auroville_events(search_query: str,specificity: str = "Broad") -> str:
+    """
+    Search for information about Auroville events and activities. 
+    Use this tool whenever the user asks about events, activities, schedules, or anything related to Auroville.
+    
+    Args:
+        search_query: The search query about Auroville events (e.g., 'dance events in October', 'music workshops', 'yoga classes')
+        specificity: Determine query specificity:
+                    - Broad (general date/day queries)
+                    - Specific (particular event/activity queries)
+        
+    Returns:
+        str: Relevant information about Auroville events
+    """
+    logger.info(f"RAG Tool called with query: {search_query}")
+    
+    # Dynamically adjust retrieval depth
+    k_value = 50 if specificity.lower() == "broad" else 10
+    # Retrieve relevant documents (uses k=50 from retriever config)
+    docs = retriever.get_relevant_documents(search_query,k=k_value)
+
+    
+    if not docs:
+        return "No relevant information found about Auroville events."
+    
+    # Format all retrieved documents
+    context = "\n\n".join([
+        f"Document {i+1}:\n{doc.page_content}" 
+        for i, doc in enumerate(docs)
+    ])
+    
+    logger.info(f"Retrieved {len(docs)} documents for RAG context")
+    
+    return f"Here is relevant information about Auroville events:\n\n{context}"
+
+tools = [search_auroville_events]
+    
+vectordb_filtering_agent = Agent(name="vectordb_query_selector_agent", instructions=INSTRUCTIONS,tools=tools,model=gemini_model)

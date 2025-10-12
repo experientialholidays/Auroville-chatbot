@@ -7,12 +7,12 @@ from openai import AsyncOpenAI
 MODEL = "gpt-4.1-mini"
 
 class QuerySelector(BaseModel):
-    specificity: str = Field(description="Determine query specificity Broad (general date/day queries) or Specific (particular event/activity queries)")
+    specificity: str = Field(description="Determine query specificity Broad (general date/day queries) or Specific (particular event queries)")
     search_query: str = Field(description="Final search query for the vector DB")
 
 
 
-INSTRUCTIONS = f"""You are an analyst who very well understands the events and activities occuring at Auroville events, India.
+INSTRUCTIONS = f"""You are an analyst who very well understands the events occuring at Auroville events, India.
 Generate a search query and specificity for the vector DB based on the user query.
 
 Today's date is {datetime.now().strftime("%A, %B %d, %Y, %I:%M %p")}.
@@ -22,7 +22,7 @@ Rules :-
 2) Always include appointment events if relevant.
 3) Determine query specificity:
    - Broad (general date/day queries)
-   - Specific (particular event/activity queries)
+   - Specific (particular event queries)
 Examples:
 
 ──────────────────────────────
@@ -34,7 +34,7 @@ Examples:
 
   User: "Tell me about events in Auroville next week"
    - specificity: Broad
-   - search_query: "Events and activities from October 13 to October 19, 2025"
+   - search_query: "Events from October 13, October 14, October 15, October 16, October 17, October 18 and October 19, 2025"
 
   User: "Are there any art exhibitions this month?"
    - specificity: Broad
