@@ -1,12 +1,22 @@
-requests
-python-dotenv
+# Core App
 gradio
-pypdf
-openai
-openai-agents
+python-dotenv
+
+# LangChain Core
 langchain
+langchain-core
+langchain-text-splitters
 langchain-openai
 langchain-chroma
 langchain-community
+
+
+# Dependencies
+openai
+openai-agents
 chromadb
+pypdf
+requests
 openpyxl
+
+google-generativeai>=0.7.0
