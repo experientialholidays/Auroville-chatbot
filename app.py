@@ -129,4 +129,14 @@ if __name__ == "__main__":
         clear.click(lambda: [], None, chatbot)
 
     logger.info("App started with OpenAI Agents SDK - Real Streaming Enabled")
-    demo.launch(inbrowser=True, debug=True)
+    
+    # --- START OF CHANGE ---
+    # Cloud Run automatically sets the PORT variable
+    # We must read it and bind the Gradio server to 0.0.0.0 (all interfaces) and the specified port.
+    server_port = int(os.environ.get("PORT", 7860))  # Gradio often defaults to 7860, but use PORT from environment
+    server_host = "0.0.0.0"
+    
+    # Updated launch command
+    demo.launch(server_name=server_host, server_port=server_port, inbrowser=False, debug=False)
+    # --- END OF CHANGE ---
+
