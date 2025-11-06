@@ -4,37 +4,22 @@ from datetime import datetime
 import os
 import logging
 from typing import Optional, Dict, Any, List
-
-# 💡 Make sure these custom imports are correct for your project structure 💡
 from vector_db import VectorDBManager 
 from agents import Agent, function_tool, OpenAIChatCompletionsModel
 from openai import AsyncOpenAI  # Fixes NameError: AsyncOpenAI
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# ----------------- CONFIGURATION -----------------
-# Define these variables (Fixes NameError: DB_FOLDER, VECTOR_DB_NAME)
 VECTOR_DB_NAME = "vector_db"
 DB_FOLDER = "input" 
-
-# ----------------- VECTOR DATABASE SETUP -----------------
 db_manager = VectorDBManager(folder=DB_FOLDER, db_name=VECTOR_DB_NAME)
-# NOTE: Set force_refresh=True the first time you run this after adding metadata!
 vectorstore = db_manager.create_or_load_db(force_refresh=False) 
 retriever = db_manager.get_retriever(k=50) 
-
-# ----------------- LLM & AGENT SETUP -----------------
 MODEL = "gemini-2.5-flash" 
 google_api_key = os.getenv('GOOGLE_API_KEY')
-
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 gemini_client = AsyncOpenAI(base_url=GEMINI_BASE_URL, api_key=google_api_key)
 gemini_model = OpenAIChatCompletionsModel(model=MODEL, openai_client=gemini_client)
-
-# ----------------- AGENT INSTRUCTIONS -----------------
-# Ensure 'datetime' is imported: from datetime import datetime
 
 INSTRUCTIONS = f"""
 You will receive:
