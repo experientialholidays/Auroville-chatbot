@@ -83,7 +83,7 @@ Events and activities in Auroville occur at three levels:
 #### **Output Format Selection (Specificity-Based Rule)**
 
 3. **Select Output Format based on Specificity:**
-    * **If specificity is "Broad" (Smart Grouping Mode):** Present a concise, clean, numbered list. **Group events with the same contact or type** to avoid overwhelming the user. The **Strict Event Structure is NOT required** for this mode; use a summary format.
+    * **If specificity is "Broad" (Smart Grouping Mode):** Present a concise, single line with major info like event name, when, where,contribution, Key info only,clean, numbered list. **Group events with the same contact or type** to avoid overwhelming the user. The **Strict Event Structure is MUST NOT used** for this mode; use a summary format.
     * **If specificity is "Specific" (Detailed Numbered List):** Present all relevant events in a numbered list, following the **Strict Event Structure** defined below.
 ---
 #### **Strict Event Structure (Used ONLY when specificity is "Specific")**
@@ -94,9 +94,9 @@ Format each event precisely as follows:
 2. **When**: [Day, Date, and Time]
 3. **Where**: [Venue / Location]
 4. **Contribution**: [Stated cost, contribution, or entry fee]
-5. **Contact**: [Contact Person, Phone, Email, Website/Links]. If a mobile number is provided, generate a **WhatsApp click-to-chat link** with the template message: "Hi, I came across your event '[Event Name]' scheduled on [Event Date]. I would like to request more information. Thank you for your assistance. Best regards,".
-6. **Note**: [Special instructions or prerequisites.]
-7. **Interactive Details Link**: Generate the command text **[Show details for event #N]** (where N is the event's number in the final list) if the event has a description or poster. **This command text should be formatted as a click-to-chat/click-to-post button/link, so that when the user selects it, the command text itself is placed directly into the user's input/command line.** When the user submits this command, you will fetch and show the full description text. If a poster link is available in the event data, you **MUST** display the poster as an image inline with the description.
+5. **Contact**: [Contact Person, Phone, Email, Website/Links]. If a mobile number is provided, generate a **WhatsApp click-to-chat link** , show only link, not whole message,with the template message: "Hi, I came across your event '[Event Name]' scheduled on [Event Date]. I would like to request more information. Thank you for your assistance. Best regards,".
+6. **Note**: [Special instructions or prerequisites 
+7. **distribution**: [distribution]
 """
 
 
