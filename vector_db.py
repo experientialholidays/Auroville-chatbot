@@ -1,7 +1,7 @@
-import os
+Import os
 import shutil
 import pandas as pd
-import ast  # ✅ added to safely parse list-style strings like '["Monday", "Tuesday"]'
+import ast  
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import CharacterTextSplitter
@@ -43,8 +43,18 @@ class VectorDBManager:
                         day_raw = str(row.get("day", "N/A"))
                         date = str(row.get("date", "N/A"))
                         location = str(row.get("location", "N/A"))
+                        
+                        # --- START REQUIRED METADATA ADDITIONS ---
+                        # These fields are required by the agent's format_event_card function
+                        title = str(row.get("title", "N/A"))
+                        time = str(row.get("time", "N/A"))
+                        contribution = str(row.get("contribution", "N/A"))
+                        contact_info = str(row.get("contact", ""))
+                        poster_url = str(row.get("poster_url", None))
+                        phone_number = str(row.get("phone", ""))
+                        # --- END REQUIRED METADATA ADDITIONS ---
 
-                        # ✅ NEW LOGIC: expand multi-day cells like '["Monday", "Tuesday"]'
+                        # NEW LOGIC: expand multi-day cells like '["Monday", "Tuesday"]'
                         if isinstance(day_raw, str) and day_raw.startswith("[") and day_raw.endswith("]"):
                             try:
                                 day_list = ast.literal_eval(day_raw)
@@ -56,17 +66,28 @@ class VectorDBManager:
                             # allow comma-separated or single day
                             day_list = [d.strip() for d in day_raw.split(",") if d.strip()] or ["N/A"]
 
-                        # ✅ create one Document per day
+                        # create one Document per day
                         for single_day in day_list:
+                            # Handle 'None' string conversion from poster_url
+                            final_poster_url = poster_url if poster_url != 'None' else None
+                            
                             documents.append(
                                 Document(
                                     page_content=row_text,
                                     metadata={
                                         "source": source_file,
                                         "sheet": sheet_name,
-                                        "day": single_day,
+                                        "day": single_day.strip(),
                                         "date": date.strip(),
                                         "location": location.strip(),
+                                        # --- INCLUDED METADATA FIELDS ---
+                                        "title": title.strip(),
+                                        "time": time.strip(),
+                                        "contribution": contribution.strip(),
+                                        "contact": contact_info.strip(),
+                                        "poster_url": final_poster_url, 
+                                        "phone": phone_number.strip(),
+                                        # --- END INCLUDED METADATA FIELDS ---
                                     },
                                 )
                             )
@@ -80,6 +101,13 @@ class VectorDBManager:
                     doc.metadata["day"] = "N/A"
                     doc.metadata["date"] = "N/A"
                     doc.metadata["location"] = "N/A"
+                    # Add required defaults for PDF/Text files
+                    doc.metadata["title"] = "N/A"
+                    doc.metadata["time"] = "N/A"
+                    doc.metadata["contribution"] = "N/A"
+                    doc.metadata["contact"] = ""
+                    doc.metadata["poster_url"] = None
+                    doc.metadata["phone"] = ""
                     documents.append(doc)
 
             elif file_path.endswith(".txt"):
@@ -90,6 +118,13 @@ class VectorDBManager:
                     doc.metadata["day"] = "N/A"
                     doc.metadata["date"] = "N/A"
                     doc.metadata["location"] = "N/A"
+                    # Add required defaults for PDF/Text files
+                    doc.metadata["title"] = "N/A"
+                    doc.metadata["time"] = "N/A"
+                    doc.metadata["contribution"] = "N/A"
+                    doc.metadata["contact"] = ""
+                    doc.metadata["poster_url"] = None
+                    doc.metadata["phone"] = ""
                     documents.append(doc)
 
         return documents
