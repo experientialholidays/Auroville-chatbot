@@ -1,4 +1,4 @@
-import gradio as gr
+Import gradio as gr
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -44,7 +44,6 @@ async def streaming_chat(question, history, session_id):
     
     try:
         response_text = ""
-        tool_call_in_progress = False
         # Clean the history to keep only 'role' and 'content'
         clean_message = [{"role": m["role"], "content": m["content"]} for m in messages if "role" in m and "content" in m]
 
@@ -52,11 +51,6 @@ async def streaming_chat(question, history, session_id):
         trace_id = gen_trace_id()
         with trace("Auroville chatbot", trace_id=trace_id):
             logger.info(f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}")
-            # trace_msg = f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
-            # updated_history = history.copy()
-            # updated_history.append({"role": "user", "content": question})
-            # updated_history.append({"role": "assistant", "content": trace_msg})
-            # yield updated_history
             
             result = Runner.run_streamed(auroville_agent, clean_message)
             
@@ -96,22 +90,88 @@ async def streaming_chat(question, history, session_id):
 # -----------------------------
 # GRADIO APP
 # -----------------------------
+
+# --- CUSTOM JAVASCRIPT FOR CLICK-BASED SEARCH ---
+JS_CODE = """
+function attachClickHandlers(msg_input_id, submit_btn_id) {
+    // Find the Chatbot container's parent element
+    const chatbotContainer = document.querySelector('div[data-testid="chatbot"]');
+    if (!chatbotContainer) return;
+
+    // Use event delegation on the container
+    chatbotContainer.addEventListener('click', function(event) {
+        let target = event.target;
+        
+        // Check if the clicked element is an <a> tag
+        if (target.tagName !== 'A') {
+            // Check if click was on strong/bold text inside the <a>
+            target = target.closest('a');
+            if (!target) return;
+        }
+
+        const href = target.getAttribute('href');
+        if (!href) return;
+        
+        // Check for the special link marker
+        if (href.startsWith('#TRIGGER_SEARCH::')) {
+            event.preventDefault(); // Stop the browser from navigating
+
+            // 1. Extract the query: '#TRIGGER_SEARCH::query::specificity'
+            const parts = href.substring(1).split('::');
+            if (parts.length < 2) return;
+            const query = parts[1]; 
+            
+            // 2. Get the Gradio message input and submit button
+            const msgInput = document.getElementById(msg_input_id);
+            const submitBtn = document.getElementById(submit_btn_id);
+
+            if (msgInput && submitBtn) {
+                // 3. Set the query into the textbox
+                msgInput.value = query;
+
+                // 4. Programmatically trigger the click
+                submitBtn.click();
+            }
+        }
+    });
+}
+"""
+
 if __name__ == "__main__":
-    with gr.Blocks() as demo:
+    with gr.Blocks(js=JS_CODE) as demo:
         gr.Markdown("# 🤖 Auroville Events Chatbot")
+        
         # Session components (hidden)
         session_id_state = gr.State(value="")
         session_id_bridge = gr.Textbox(value="", visible=False)
         temp_storage_state = gr.State(value="")  
+        
         # Chat interface
         chatbot = gr.Chatbot(height=500, value=[],type='messages')
-        msg = gr.Textbox( placeholder="Ask me anything about Auroville events...",lines=1,label="Message",show_label=False )
+        
+        # Components needed for JS targeting
+        # We assign specific IDs for the JavaScript to find them
+        msg = gr.Textbox(
+            placeholder="Ask me anything about Auroville events...",
+            lines=1,
+            label="Message",
+            show_label=False,
+            elem_id="msg_input_field"  # Unique ID for message input
+        )
         
         # Buttons
         with gr.Row():
-            submit = gr.Button("Send", variant="primary")
-            clear = gr.Button("Clear Chat")
+            submit = gr.Button("Send", variant="primary", elem_id="submit_button") # Unique ID for send button
             new_session_btn = gr.Button("New Session")
+        
+        # Final JavaScript execution step
+        demo.load(
+            None,
+            None,
+            None,
+            # Call JS function after the page loads
+            js=f"() => {{ attachClickHandlers('msg_input_field', 'submit_button'); }}"
+        )
         
         # Setup session handlers (load & new session)
         session_handler.setup_session_handlers(
@@ -122,20 +182,17 @@ if __name__ == "__main__":
             chatbot=chatbot,
             new_session_btn=new_session_btn
         )        
+        
         # Message submission handlers
         msg.submit(streaming_chat,inputs=[msg, chatbot, session_id_state],outputs=[chatbot]).then(lambda: "",None,msg )
         submit.click(streaming_chat,inputs=[msg, chatbot, session_id_state],outputs=[chatbot]).then(lambda: "",None,msg)       
+        
         # Clear chat (UI only)
         clear.click(lambda: [], None, chatbot)
 
     logger.info("App started with OpenAI Agents SDK - Real Streaming Enabled")
     
-    # --- START OF CLOUD RUN FIX ---
-    # Cloud Run requires the server to listen on 0.0.0.0 and the port specified by the PORT environment variable (usually 8080).
     server_port = int(os.environ.get("PORT", 8080))
     server_host = "0.0.0.0"
     
-    # Launch Gradio on the mandatory host and port
-    # Set debug=False and inbrowser=False for production environment
     demo.launch(server_name=server_host, server_port=server_port, inbrowser=False, debug=False)
-    # --- END OF CLOUD RUN FIX ---
